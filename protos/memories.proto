@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package timeline;
+
+option go_package = "genproto/";
+
+message Memory {
+    string id = 1;
+    string user_id = 2;
+    string title = 3;
+    string description = 4;
+    string date = 5;
+    repeated string tags = 6;
+    float latitude = 7;
+    float longitude = 8;
+    string place_name = 9;
+    string privacy = 10;
+    string created_at = 11;
+    string updated_at = 12;
+}
+
+
+message AddMemoryRequest {
+    string id = 1;
+    string user_id = 2;
+    string title = 3;
+    string description = 4;
+    string date = 5;
+    repeated string tags = 6;
+    float latitude = 7;
+    float longitude = 8;
+    string place_name = 9;
+    string privacy = 10;
+}
+
+message AddMemoryResponse {}
+
+
+message GetAllMemoriesRequest{
+    string page = 1;
+    string limit = 2;
+    string start_date = 3;
+    string end_date = 4;
+    string tags = 5;
+}
+
+message GetAllMemoriesResponse{
+    repeated Memory memories = 1;
+}
+
+
+message GetMemoryRequest{
+    string id = 1;
+}
+
+message GetMemoryResponse{
+    Memory memory = 1;
+}
+
+message UpdateMemoryRequest{
+    string id = 1;
+    string title = 2;
+    repeated string tags = 3;
+}
+
+message UpdateMemoryResponse{}
+
+message DeleteMemoryRequest{
+    string id = 1;
+}
+
+message DeleteMemoryResponse{
+    string message = 1;
+}
+
+
+message ShareMemoryRequest {
+    string memory_id = 1;
+    repeated string shared_with = 2;
+}
+
+message ShareMemoryResponse {}
+
+service MemoryService {
+    rpc AddMemory(AddMemoryRequest) returns (AddMemoryResponse);
+    rpc GetMemory(GetMemoryRequest) returns (GetMemoryResponse);
+    rpc GetAllMemories(GetAllMemoriesRequest) returns (GetAllMemoriesResponse);
+    rpc UpdateMemory(UpdateMemoryRequest) returns (UpdateMemoryResponse);
+    rpc DeleteMemory(DeleteMemoryRequest) returns (DeleteMemoryResponse);
+    rpc ShareMemory(ShareMemoryRequest) returns (ShareMemoryResponse);
+  
+}

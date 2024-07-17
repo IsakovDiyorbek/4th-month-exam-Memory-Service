@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package timeline;
+
+option go_package = "genproto/";
+
+
+
+service MediaService {
+    rpc AddMedia(AddMediaRequest) returns (AddMediaResponse);
+    rpc GetMediaByMemoryId(GetMediaByMemoryIdRequest) returns (GetMediaByMemoryIdResponse);
+    rpc DeleteMedia(DeleteMediaRequest) returns (DeleteMediaResponse);
+    rpc UpdateMedia(UpdateMediaRequest) returns (UpdateMediaResponse);
+    rpc GetAllMedia(GetAllMediaRequest) returns (GetAllMediaResponse);
+}
+
+message Media {
+    string id = 1;
+    string memory_id = 2;
+    string type = 3;
+    string url = 4;
+    string created_at = 5;
+}
+
+message AddMediaRequest {
+    string media_id = 1;
+    string memory_id = 2;
+    string type = 3;
+    string url = 4;
+}
+
+message AddMediaResponse {}
+
+message GetMediaByMemoryIdRequest { // Renamed for uniqueness
+    string memory_id = 1;
+}
+
+message GetMediaByMemoryIdResponse { // Renamed for uniqueness
+    repeated Media media = 1;
+}
+
+message DeleteMediaRequest {
+    string memory_id = 1;
+    string media_id = 2;
+}
+
+message DeleteMediaResponse {}
+
+
+
+message UpdateMediaRequest {
+    string id = 1;
+    string memory_id = 2;
+    string type = 3;
+    string url = 4;
+}
+
+message UpdateMediaResponse {}
+
+
+message GetAllMediaRequest{
+    string type = 1;
+    string url = 2;
+}
+
+
+message GetAllMediaResponse{
+    repeated Media media = 1;
+}

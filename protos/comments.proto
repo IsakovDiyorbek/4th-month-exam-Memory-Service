@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package timeline;
+
+option go_package = "genproto/";
+
+
+service CommentService{
+    rpc AddComment(AddCommentRequest) returns (AddCommentResponse);
+    rpc GetByMemoryId(GetByIdMemoryRequest) returns (GetByIdMemoryResponse);
+    rpc UpdateComment(UpdateCommentRequest) returns (UpdateCommentResponse);
+    rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+    rpc GetById(GetByCommentIdRequest) returns (GetByCommentIdResponse);
+    rpc GetAllCommets(GetCommentsRequest) returns (GetCommentsResponse);
+}
+
+message Comment{
+    string comment_id = 1;
+    string memory_id = 2;
+    string user_id  = 3;
+    string content = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+
+
+message ByMemoryId{
+    string id = 1;
+    string user_id = 2;
+    string content = 3;
+    string created_at = 4;
+}
+
+message AddCommentRequest{
+    string comment_id = 1;
+    string memory_id = 2;
+    string user_id = 3;
+    string content = 4;
+}
+
+message AddCommentResponse{}
+
+
+message GetByIdMemoryRequest{
+    string memory_id = 1;
+}
+
+message GetByIdMemoryResponse{
+    repeated ByMemoryId comments = 1;
+}
+
+
+message UpdateCommentRequest{
+    string memory_id = 1;
+    string comment_id = 2;
+    string content = 3;
+}
+
+message UpdateCommentResponse{}
+
+
+message DeleteCommentRequest{
+    string id = 1;
+}
+
+message DeleteCommentResponse{}
+
+message GetByCommentIdRequest{
+    string comment_id = 1;
+}
+
+message GetByCommentIdResponse{
+    Comment comment = 1;
+}
+
+message GetCommentsRequest{
+    string user_id = 1;
+    string limit = 2;
+    string ofset = 3;
+}
+
+message GetCommentsResponse{
+   repeated Comment comment = 1;
+}
+
