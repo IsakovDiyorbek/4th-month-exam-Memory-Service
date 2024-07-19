@@ -1,0 +1,56 @@
+version: '3.9'
+
+services: 
+  migrate:
+    image: migrate/migrate
+    networks:
+      - GLhost
+    volumes:
+      - ./migrations:/migrations
+    command: [ "-path", "/migrations", "-database",  
+                "postgres://postgres:20005@memory:5432/memory_exam?sslmode=disable", 
+                "up" ]
+    depends_on:
+      - postgres-db2    
+
+  postgres-db2:
+    container_name: memory #post
+    image: postgres:latest
+    environment:
+      PGUSER: postgres
+      POSTGRES_PASSWORD: 20005
+      PGDATA: /data/postgres
+      POSTGRES_DB: memory_exam 
+    volumes:
+      - db:/memory-database/memory-memory
+    ports:
+      - "5431:5432"
+    networks:
+      - GLhost
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5   
+
+  memory_service:
+    container_name: memory_service
+    build: .
+    depends_on:
+      - postgres-db2
+    
+      
+    ports:
+      - "7777:7777"
+    networks:
+      - GLhost     
+
+networks:
+  GLhost:
+    external: true
+    name: timecapsule
+    driver: bridge      
+
+volumes:
+  db: 

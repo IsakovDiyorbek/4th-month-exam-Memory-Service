@@ -34,7 +34,7 @@ func (c *CommentRepo) AddComment(ctx context.Context, req *pb.AddCommentRequest)
 }
 
 func (c *CommentRepo) GetByMemoryId(ctx context.Context, req *pb.GetByIdMemoryRequest) (*pb.GetByIdMemoryResponse, error) {
-	query := `select id, user_id, content, created_at from comments where memory_id = $1`
+	query := `select id, user_id, content, created_at from comments where memory_id = $1 and deleted_at = 0`
 
 	rows, err := c.Db.QueryContext(ctx, query, req.MemoryId)
 	if err != nil {
@@ -58,7 +58,8 @@ func (c *CommentRepo) GetByMemoryId(ctx context.Context, req *pb.GetByIdMemoryRe
 }
 
 func (c *CommentRepo) DeleteComment(ctx context.Context, req *pb.DeleteCommentRequest) (*pb.DeleteCommentResponse, error) {
-	query := `update comments set deleted_at = $1 where id = $2`
+	fmt.Println(req.Id)
+	query := `UPDATE comments SET deleted_at = $1 WHERE id = $2`
 
 	_, err := c.Db.ExecContext(ctx, query, time.Now().Unix(), req.Id)
 	if err != nil {
@@ -69,7 +70,7 @@ func (c *CommentRepo) DeleteComment(ctx context.Context, req *pb.DeleteCommentRe
 }
 
 func (c *CommentRepo) UpdateComment(ctx context.Context, req *pb.UpdateCommentRequest) (*pb.UpdateCommentResponse, error) {
-	query := `update comments set memory_id = $1, content = $3 where id = $4 and deleted_at = 0`
+	query := `update comments set memory_id = $1, content = $2 where id = $3 and deleted_at = 0`
 
 	_, err := c.Db.ExecContext(ctx, query, req.MemoryId, req.Content, req.Id)
 	if err != nil {
@@ -80,7 +81,7 @@ func (c *CommentRepo) UpdateComment(ctx context.Context, req *pb.UpdateCommentRe
 }
 
 func (c *CommentRepo) GetById(ctx context.Context, req *pb.GetByCommentIdRequest) (*pb.GetByCommentIdResponse, error) {
-	query := `select id, memory_id, user_id, content, created_at from comments where id = $1`
+	query := `select id, memory_id, user_id, content, created_at from comments where id = $1 and deleted_at = 0`
 
 	row := c.Db.QueryRowContext(ctx, query, req.Id)
 

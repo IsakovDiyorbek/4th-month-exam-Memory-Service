@@ -64,7 +64,7 @@ func (m *MediaRepo) GetMediaByMemoryId(ctx context.Context, req *pb.GetMediaByMe
 
 // Mediani chop etish
 func (m *MediaRepo) DeleteMedia(ctx context.Context, req *pb.DeleteMediaRequest) (*pb.DeleteMediaResponse, error) {
-	query := `update set deleted_at = $1 where id = $2`
+	query := `update media set deleted_at = $1 where id = $2`
 
 	_, err := m.db.ExecContext(ctx, query, time.Now().Unix(), req.MediaId)
 	if err != nil {
