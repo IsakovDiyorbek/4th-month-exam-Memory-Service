@@ -27,7 +27,7 @@ func (m *MediaRepo) AddMedia(ctx context.Context, req *pb.AddMediaRequest) (*pb.
 	req.MediaId = uuid.NewString()
 	_, err := m.db.ExecContext(ctx, query, req.MediaId, req.MemoryId, req.Type, req.Url)
 	if err != nil {
-		log.Printf("Error while creating borrower: %v\n", err)
+		log.Printf("Error while creating media: %v\n", err)
 		return nil, err
 	}
 
@@ -78,7 +78,7 @@ func (m *MediaRepo) DeleteMedia(ctx context.Context, req *pb.DeleteMediaRequest)
 
 // Malumotlarni o'zgartirish
 func (m *MediaRepo) UpdateMedia(ctx context.Context, req *pb.UpdateMediaRequest) (*pb.UpdateMediaResponse, error) {
-	query := `update media set memory_id = $1, type = $1, url = $2 where id = $3`
+	query := `update media set memory_id = $1, type = $2, url = $3 where id = $4`
 
 	_, err := m.db.ExecContext(ctx, query, req.MemoryId, req.Type, req.Url, req.Id)
 	if err != nil {
@@ -96,12 +96,12 @@ func (m *MediaRepo) GetAllMedia(ctx context.Context, req *pb.GetAllMediaRequest)
 	param := make(map[string]interface{})
 	filter := ` where deleted_at = 0`
 
-	if len(req.Type) > 0 {
+	if req.Type != "" {
 		param["type"] = req.Type
 		filter += ` and type = :type`
 	}
 
-	if len(req.Url) > 0 {
+	if req.Url != "" {
 		param["url"] = req.Url
 		filter += ` and url = :url`
 	}
@@ -111,7 +111,7 @@ func (m *MediaRepo) GetAllMedia(ctx context.Context, req *pb.GetAllMediaRequest)
 	query, arr := helper.ReplaceQueryParams(query, param)
 
 	rows, err := m.db.QueryContext(ctx, query, arr...)
-	if err != nil{
+	if err != nil {
 		log.Printf("Error while getting media: %v\n", err)
 		return nil, err
 	}
@@ -122,15 +122,13 @@ func (m *MediaRepo) GetAllMedia(ctx context.Context, req *pb.GetAllMediaRequest)
 	for rows.Next() {
 		var m pb.Media
 		err := rows.Scan(&m.Id, &m.MemoryId, &m.Type, &m.Url, &m.CreatedAt)
-		if err != nil{
-			log.Printf("Error while scan media: %v\n", err)
+		if err != nil {
+			log.Printf("Error while scanning media: %v\n", err)
 			return nil, err
 		}
-	
-		media = append(media, &m)
 
+		media = append(media, &m)
 	}
 
 	return &pb.GetAllMediaResponse{Media: media}, nil
 }
-

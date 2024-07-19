@@ -15,7 +15,7 @@ service CommentService{
 }
 
 message Comment{
-    string comment_id = 1;
+    string id = 1;
     string memory_id = 2;
     string user_id  = 3;
     string content = 4;
@@ -32,7 +32,7 @@ message ByMemoryId{
 }
 
 message AddCommentRequest{
-    string comment_id = 1;
+    string id = 1;
     string memory_id = 2;
     string user_id = 3;
     string content = 4;
@@ -52,7 +52,7 @@ message GetByIdMemoryResponse{
 
 message UpdateCommentRequest{
     string memory_id = 1;
-    string comment_id = 2;
+    string id = 2;
     string content = 3;
 }
 
@@ -66,7 +66,7 @@ message DeleteCommentRequest{
 message DeleteCommentResponse{}
 
 message GetByCommentIdRequest{
-    string comment_id = 1;
+    string id = 1;
 }
 
 message GetByCommentIdResponse{

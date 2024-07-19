@@ -6,8 +6,8 @@ import (
 	"time"
 
 	pb "github.com/Exam4/4th-month-exam-Memory-Service/genproto"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -22,7 +22,7 @@ func NewMemoryRepo(db *mongo.Database) *MemoryRepo {
 
 func (s *MemoryRepo) AddMemory(ctx context.Context, req *pb.AddMemoryRequest) (*pb.AddMemoryResponse, error) {
 	memory := &pb.Memory{
-		Id:          req.GetId(),
+		Id:          uuid.NewString(),
 		UserId:      req.GetUserId(),
 		Title:       req.GetTitle(),
 		Description: req.GetDescription(),
@@ -46,17 +46,10 @@ func (s *MemoryRepo) AddMemory(ctx context.Context, req *pb.AddMemoryRequest) (*
 
 func (s *MemoryRepo) GetMemory(ctx context.Context, req *pb.GetMemoryRequest) (*pb.GetMemoryResponse, error) {
 	var memory pb.Memory
-	id, err := primitive.ObjectIDFromHex(req.GetId())
+	err := s.db.FindOne(ctx, bson.M{"id": req.GetId()}).Decode(&memory)
 	if err != nil {
 		return nil, err
 	}
-
-	filter := bson.M{"_id": id}
-	err = s.db.FindOne(ctx, filter).Decode(&memory)
-	if err != nil {
-		return nil, err
-	}
-
 	return &pb.GetMemoryResponse{Memory: &memory}, nil
 }
 
@@ -110,60 +103,33 @@ func (s *MemoryRepo) GetAllMemories(ctx context.Context, req *pb.GetAllMemoriesR
 }
 
 func (s *MemoryRepo) UpdateMemory(ctx context.Context, req *pb.UpdateMemoryRequest) (*pb.UpdateMemoryResponse, error) {
-	id, err := primitive.ObjectIDFromHex(req.GetId())
+	update := bson.M{}
+	if req.GetTitle() != "" {
+		update["title"] = req.GetTitle()
+	}
+	if req.GetTags() != nil {
+		update["tags"] = req.GetTags()
+	}
+	_, err := s.db.UpdateOne(ctx, bson.M{"id": req.GetId()}, bson.M{"$set": update})
 	if err != nil {
 		return nil, err
 	}
-
-	filter := bson.M{"_id": id}
-	update := bson.M{
-		"$set": bson.M{
-			"title":      req.GetTitle(),
-			"tags":       req.GetTags(),
-			"updated_at": time.Now().Format(time.RFC3339),
-		},
-	}
-
-	_, err = s.db.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return nil, err
-	}
-
 	return &pb.UpdateMemoryResponse{}, nil
 }
 
 func (s *MemoryRepo) DeleteMemory(ctx context.Context, req *pb.DeleteMemoryRequest) (*pb.DeleteMemoryResponse, error) {
-	id, err := primitive.ObjectIDFromHex(req.GetId())
+	_, err := s.db.DeleteOne(ctx, bson.M{"id": req.GetId()})
 	if err != nil {
 		return nil, err
 	}
-
-	filter := bson.M{"_id": id}
-	_, err = s.db.DeleteOne(ctx, filter)
-	if err != nil {
-		return nil, err
-	}
-
 	return &pb.DeleteMemoryResponse{Message: "Memory deleted successfully"}, nil
 }
 
 func (s *MemoryRepo) ShareMemory(ctx context.Context, req *pb.ShareMemoryRequest) (*pb.ShareMemoryResponse, error) {
-	id, err := primitive.ObjectIDFromHex(req.GetMemoryId())
+	update := bson.M{"$addToSet": bson.M{"tags": bson.M{"$each": req.GetSharedWith()}}}
+	_, err := s.db.UpdateOne(ctx, bson.M{"id": req.GetMemoryId()}, update)
 	if err != nil {
 		return nil, err
 	}
-
-	filter := bson.M{"_id": id}
-	update := bson.M{
-		"$addToSet": bson.M{
-			"shared_with": bson.M{"$each": req.GetSharedWith()},
-		},
-	}
-
-	_, err = s.db.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return nil, err
-	}
-
 	return &pb.ShareMemoryResponse{}, nil
 }

@@ -3,11 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	pb "github.com/Exam4/4th-month-exam-Memory-Service/genproto"
-	"github.com/Exam4/4th-month-exam-Memory-Service/helper"
+	"github.com/google/uuid"
 )
 
 type CommentRepo struct {
@@ -19,9 +21,10 @@ func NewCommentRepo(Db *sql.DB) *CommentRepo {
 }
 
 func (c *CommentRepo) AddComment(ctx context.Context, req *pb.AddCommentRequest) (*pb.AddCommentResponse, error) {
+	req.Id = uuid.NewString()
 	query := `insert into comments(id, memory_id, user_id, content) values($1, $2, $3, $4)`
 
-	_, err := c.Db.ExecContext(ctx, query, req.CommentId, req.MemoryId, req.UserId, req.Content)
+	_, err := c.Db.ExecContext(ctx, query, req.Id, req.MemoryId, req.UserId, req.Content)
 	if err != nil {
 		log.Printf("Error while creating comment: %v\n", err)
 		return nil, err
@@ -68,7 +71,7 @@ func (c *CommentRepo) DeleteComment(ctx context.Context, req *pb.DeleteCommentRe
 func (c *CommentRepo) UpdateComment(ctx context.Context, req *pb.UpdateCommentRequest) (*pb.UpdateCommentResponse, error) {
 	query := `update comments set memory_id = $1, content = $3 where id = $4 and deleted_at = 0`
 
-	_, err := c.Db.ExecContext(ctx, query, req.MemoryId, req.Content, req.CommentId)
+	_, err := c.Db.ExecContext(ctx, query, req.MemoryId, req.Content, req.Id)
 	if err != nil {
 		log.Printf("Error while updating comment: %v\n")
 	}
@@ -77,58 +80,61 @@ func (c *CommentRepo) UpdateComment(ctx context.Context, req *pb.UpdateCommentRe
 }
 
 func (c *CommentRepo) GetById(ctx context.Context, req *pb.GetByCommentIdRequest) (*pb.GetByCommentIdResponse, error) {
-	query := `select id, memory_id, user_id, content, created_at from comments where id = $1 and deleted_at = 0`
+	query := `select id, memory_id, user_id, content, created_at from comments where id = $1`
 
-	row := c.Db.QueryRowContext(ctx, query, req.CommentId)
+	row := c.Db.QueryRowContext(ctx, query, req.Id)
 
 	var comment pb.Comment
 
-	err := row.Scan(&comment.CommentId, &comment.MemoryId, &comment.UserId, &comment.Content, &comment.CreatedAt)
+	err := row.Scan(&comment.Id, &comment.MemoryId, &comment.UserId, &comment.Content, &comment.CreatedAt)
 	if err != nil {
-		log.Printf("Error while scanning comment: %v\n")
+		log.Printf("Error while scanning comment: %v\n", err)
 		return nil, err
 	}
 
 	return &pb.GetByCommentIdResponse{Comment: &comment}, nil
 }
 
-func (c *CommentRepo) GetAllCommets(ctx context.Context, req *pb.GetCommentsRequest) (*pb.GetCommentsResponse, error) {
-	query := `select id, memory_id, user_id, content, created_at, updated_at from comments`
+func (s *CommentRepo) GetAllCommets(ctx context.Context, req *pb.GetCommentsRequest) (*pb.GetCommentsResponse, error) {
+	query := `SELECT id, memory_id, user_id, content, created_at, updated_at FROM comments`
+	conditions := []string{}
+	args := []interface{}{}
 
-	param := make(map[string]interface{})
-	filter := ` where deleted_at = 0`
-
-	if len(req.UserId) > 0 {
-		param["user_id"] = req.UserId
-		filter += ` and user_id = :user_id`
+	if req.GetUserId() != "" {
+		conditions = append(conditions, "user_id = $1")
+		args = append(args, req.GetUserId())
 	}
 
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
 
-	query += filter
+	query += " ORDER BY created_at DESC"
 
-	query, arr := helper.ReplaceQueryParams(query, param)
+	if req.GetLimit() != "" {
+		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+		args = append(args, req.GetLimit())
+	}
 
-	rows, err := c.Db.QueryContext(ctx, query, arr...)
-	if err != nil{
-		log.Printf("Error while getting comment: %v\n", err)
+	if req.GetOfset() != "" {
+		query += fmt.Sprintf(" OFFSET $%d", len(args)+1)
+		args = append(args, req.GetOfset())
+	}
+
+	rows, err := s.Db.QueryContext(ctx, query, args...)
+	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var comment []*pb.Comment
-
+	var comments []*pb.Comment
 	for rows.Next() {
-		var c pb.Comment
-		err := rows.Scan(&c.CommentId, &c.MemoryId, &c.UserId, &c.Content, &c.CreatedAt, &c.UpdatedAt)
-		if err != nil{
-			log.Printf("Error while scan comment: %v\n", err)
+		var comment pb.Comment
+		if err := rows.Scan(&comment.Id, &comment.MemoryId, &comment.UserId, &comment.Content, &comment.CreatedAt, &comment.UpdatedAt); err != nil {
 			return nil, err
 		}
-		comment = append(comment, &c)
-
+		comments = append(comments, &comment)
 	}
 
-	return &pb.GetCommentsResponse{Comment: comment}, nil
+	return &pb.GetCommentsResponse{Comment: comments}, nil
 }
-
-
